@@ -13195,50 +13195,68 @@ run(function()
 		Tooltip = 'Delay between block placements (milliseconds)',
 		Suffix = "ms"
 	})
-	ScaffoldHUD = Scaffold:CreateToggle({
-		Name = 'Scaffold HUD',
-		Function = function(callback)
-			if callback then
-				local hudBg = Drawing.new('Square')
-				local hudLbl = Drawing.new('Text')
-				hudBg.Filled = true
-				hudBg.Color = Color3.new()
-				hudBg.Transparency = 0.5
-				hudBg.ZIndex = 1
-				hudLbl.Font = 0
-				hudLbl.Size = 16
-				hudLbl.Color = Color3.new(1, 1, 1)
-				hudLbl.Outline = true
-				hudLbl.OutlineColor = Color3.new()
-				hudLbl.ZIndex = 2
+	do
+		local hudBg, hudIcon, hudLbl, hudConn, lastBlockIcon
+		ScaffoldHUD = Scaffold:CreateToggle({
+			Name = 'Scaffold HUD',
+			Function = function(callback)
+				if callback then
+					hudBg = Drawing.new('Square')
+					hudIcon = Drawing.new('Image')
+					hudLbl = Drawing.new('Text')
+					hudBg.Filled = true
+					hudBg.Color = Color3.new()
+					hudBg.Transparency = 0.5
+					hudBg.ZIndex = 1
+					hudIcon.Size = Vector2.new(20, 20)
+					hudIcon.ZIndex = 2
+					hudLbl.Font = 0
+					hudLbl.Size = 16
+					hudLbl.Color = Color3.new(1, 1, 1)
+					hudLbl.Outline = true
+					hudLbl.OutlineColor = Color3.new()
+					hudLbl.ZIndex = 3
 
-				ScaffoldHUD:Clean(function()
-					hudBg:Remove()
-					hudLbl:Remove()
-				end)
+					hudConn = runService.RenderStepped:Connect(function()
+						local block, amount = getScaffoldBlock()
+						if not block then block = 'None' end
+						amount = amount or 0
 
-				ScaffoldHUD:Clean(runService.RenderStepped:Connect(function()
-					local block, amount = getScaffoldBlock()
-					if not block then block = 'None' end
-					amount = amount or 0
+						if block ~= lastBlockIcon then
+							lastBlockIcon = block
+							local icon = bedwars.getIcon and bedwars.getIcon({itemType = block}, true)
+							if icon then
+								hudIcon.Data = icon
+							end
+						end
 
-					local sz = gameCamera.ViewportSize
-					local cx, cy = sz.X / 2, sz.Y / 2 + 120
-					local text = block .. ': ' .. tostring(amount)
+						local sz = gameCamera.ViewportSize
+						local cx, cy = sz.X / 2, sz.Y / 2 + 120
+						local text = block .. ': ' .. tostring(amount)
+						local iconPad = 4
 
-					hudLbl.Text = text
-					local tw = hudLbl.TextBounds.X
-					local th = hudLbl.TextBounds.Y
-					local padX, padY = 8, 6
-					local bgW, bgH = tw + padX * 2, th + padY * 2
+						hudLbl.Text = text
+						local tw = hudLbl.TextBounds.X
+						local th = hudLbl.TextBounds.Y
+						local padX, padY = 8, 6
+						local totalW = tw + padX * 2 + 20 + iconPad
+						local totalH = math.max(th, 20) + padY * 2
 
-					hudBg.Size = Vector2.new(bgW, bgH)
-					hudBg.Position = Vector2.new(cx - bgW / 2, cy - bgH / 2)
-					hudLbl.Position = Vector2.new(cx - tw / 2, cy - th / 2)
-				end))
+						hudBg.Size = Vector2.new(totalW, totalH)
+						hudBg.Position = Vector2.new(cx - totalW / 2, cy - totalH / 2)
+						hudIcon.Position = Vector2.new(cx - totalW / 2 + padX, cy - totalH / 2 + padY)
+						hudLbl.Position = Vector2.new(cx - totalW / 2 + padX + 20 + iconPad, cy - totalH / 2 + padY)
+					end)
+				else
+					lastBlockIcon = nil
+					if hudConn then hudConn:Disconnect() hudConn = nil end
+					if hudIcon then hudIcon:Remove() hudIcon = nil end
+					if hudBg then hudBg:Remove() hudBg = nil end
+					if hudLbl then hudLbl:Remove() hudLbl = nil end
+				end
 			end
-		end
-	})
+		})
+	end
 end)
 	
 run(function()
